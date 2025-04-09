@@ -1,12 +1,18 @@
 # Importando a classe Flask para criar nossa aplicação
 # Funcionalidades do Flask = request e jsonify
+
+# request: permite capturar os dados enviados pelo cliente
+#jsonify: é usado para transformar os dados em formato JSON para resposta
 from flask import Flask, request, jsonify
+
+from flask_cors import CORS
 
 # Importar o módulo sqlLite3 para manipulação do banco de dados SQLite 
 import sqlite3
 
 # Criar uma instância do Flask e armazenamos na variável que foi criado o "app"
 app = Flask(__name__)
+CORS(app)
 
 # Criando uma rota para o endpoint "/"
 # Quando acessarmos http://127.0.0.1:5000/, a função abaixo será executada
@@ -93,6 +99,36 @@ def doar():
         # `jsonify()` transforma um dicionário Python em JSON válido para ser retornado na resposta HTTP
         # O código HTTP 201 indica que um novo recurso (livro) foi criado com sucesso
         return jsonify({"mensagem": "Livro cadastrado com sucesso"}), 201
+
+# Criando uma endpoint para listar os livros cadastrados no banco de dados
+# Esse endpoint será acessado através de uma requisição HTTP do tipo "GET"
+
+@app.route("/livros", methods=["GET"]) 
+
+def listar_livros():
+    with sqlite3.connect("database.db") as conn:
+        
+        #Executando um comando SQL para buscar todos os livros na tabela LIVROS
+        livros = conn.execute("SELECT * FROM LIVROS").fetchall()
+        
+        #Criando uma lista vazia para armazenar os livros em formato de dicionário
+        livros_formatados = []
+        
+        # Percorre cada item da lista retornada do banco de dados
+        for item in livros:
+            dicionario_livros = {
+                "id": item[0], # Pegandp o ID livro 
+                "titulo": item[1], # Pegando o título do livro
+                "categoria": item[2], # Pegando a categoria do livro
+                "autor": item[3], # Pegando o autor do livro
+                "image_url": item[4] # Pegando a imagem do livro
+            }
+            
+            # Adiciona esse dicionário à lista de livros formatados
+            livros_formatados.append(dicionario_livros)
+    
+    # Retornando a lista de livros no formato JSON com o código de status 200 (OK)
+    return jsonify(livros_formatados), 200
 
 # Fazer uma verificação se o script está sendo executado diretamente e não importado como módulo
 if __name__ == "__main__":

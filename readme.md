@@ -35,7 +35,7 @@ COMANDO:
 
 *5ª - No terminal colocar o requirements.txt (opcional)*
 -   
-- O requiments é opcional mas seria interessantess colocar em caso se quiser compartilhar seu código ou pra quando trabalhar em grupo para saberem as versões dos pacotes
+- O requiments é opcional mas seria interessante colocar em caso de querer compartilhar seu código ou pra quando trabalhar em grupo para saberem as versões dos pacotes
 
 COMANDO:
 
@@ -183,3 +183,152 @@ if __name__ == "__main__":
 
     app.run(debug = True)
 ```
+
+---
+## 4° Etapa - API Completa com POST e GET
+
+```python
+
+# request: permite capturar os dados enviados pelo cliente
+#jsonify: é usado para transformar os dados em formato JSON para resposta
+from flask import Flask, request, jsonify
+# ------------------------- MUDANÇAS -------------------------
+from flask_cors import CORS
+
+import sqlite3
+
+app = Flask(__name__)
+# ------------------------- MUDANÇAS -------------------------
+CORS(app)
+
+@app.route("/")
+
+def inicial():
+    return "<h1> Sistema de livros VAI NA WEB</h1>"
+
+def init_db():
+
+    with sqlite3.connect("database.db") as conn:
+
+        conn.execute(
+
+            """
+                CREATE TABLE IF NOT EXISTS LIVROS(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    titulo TEXT NOT NULL,
+                    categoria TEXT NOT NULL,
+                    autor TEXT NOT NULL,
+                    image_url TEXT NOT NULL
+                ) 
+            """
+        )
+
+init_db()
+
+@app.route("/doar", methods=["POST"])
+def doar():
+  
+    dados = request.get_json()
+
+    titulo = dados.get("titulo")
+    categoria = dados.get("categoria")
+    autor = dados.get("autor")
+    image_url = dados.get("image_url")
+
+    if not titulo or not categoria or not autor or not image_url:
+        return jsonify({"erro": "Todos os campos são obrigatórios"}), 400
+
+    with sqlite3.connect("database.db") as conn:
+
+        conn.execute(
+            f"""
+                INSERT INTO LIVROS (titulo, categoria, autor, image_url) VALUES ("{titulo}", "{categoria}", "{autor}", "{image_url}")
+            """
+        )
+
+        conn.commit()
+        
+        return jsonify({"mensagem": "Livro cadastrado com sucesso"}), 201
+
+# ------------------------- MUDANÇAS -------------------------
+# Criando uma endpoint para listar os livros cadastrados no banco de dados
+# Esse endpoint será acessado através de uma requisição HTTP do tipo "GET"
+
+@app.route("/livros", methods=["GET"]) 
+
+def listar_livros():
+    with sqlite3.connect("database.db") as conn:
+        
+        #Executando um comando SQL para buscar todos os livros na tabela LIVROS
+        livros = conn.execute("SELECT * FROM LIVROS").fetchall()
+        
+        #Criando uma lista vazia para armazenar os livros em formato de dicionário
+        livros_formatados = []
+        
+        # Percorre cada item da lista retornada do banco de dados
+        for item in livros:
+            dicionario_livros = {
+                "id": item[0], # Pegandp o ID livro 
+                "titulo": item[1], # Pegando o título do livro
+                "categoria": item[2], # Pegando a categoria do livro
+                "autor": item[3], # Pegando o autor do livro
+                "image_url": item[4] # Pegando a imagem do livro
+            }
+            
+            # Adiciona esse dicionário à lista de livros formatados
+            livros_formatados.append(dicionario_livros)
+    
+    # Retornando a lista de livros no formato JSON com o código de status 200 (OK)
+    return jsonify(livros_formatados), 200
+
+if __name__ == "__main__":    
+    app.run(debug = True)
+
+```
+
+## 5° Etapa - Deploy da API 
+
+### Render para colocar API no ar
+- Acesse o [link do Render](https://dashboard.render.com/)
+
+---
+### Database Cliente uma extensão do vscode para poder manipular o banco de dados
+---
+
+OBS: Antes de fazer o deploy no Render, certificar que o ambiente virtual esteja ativado
+
+1ª Adicione seu código no Github 
+-
+
+2ª Ativar o ambiente virtual
+-
+
+`source venv/Scripts/activate`
+
+3ª Instalar o flask cors
+- 
+
+- **Flask-CORS** é uma extensão para o framework Flask que habilita o CORS nas rotas
+
+- **CORS** é um mecanismo de segurança que os navegadores usam para restringir requisições feitas por scripts entre sites diferentes.
+
+`pip install flask-cors`
+
+4ª Instalar o gunicorn 
+-
+
+- Gunicorn é um servidor HTTP para aplicações Python, ele é muito usado para rodar aplicações Flask, Django e outras em produção. 
+
+`pip install gunicorn`
+
+5ª Adicionar o requirements
+-
+
+- Em caso de não ter adicionado no início
+
+    `pip freeze > requirements.txt`
+
+#### Depois só atualizar no Github e pode fazer o deploy no render.
+
+
+
